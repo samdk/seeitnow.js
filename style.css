@@ -1,0 +1,17 @@
+body {
+	background: white;
+	color: black;
+}
+	#outer {
+		height: 210px;
+	}
+	div div {
+		width: 200px;
+		height: 200px;
+		margin: 10px;
+		float: left;
+	}
+	#a { background: purple; }
+	#b { background: blue; }
+	#c { background: green; }
+
