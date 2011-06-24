@@ -136,9 +136,7 @@ class Picker
 		p.cvs.mouseup -> p.cvs.unbind('mousemove')
 	pickColor: (e) =>
 		p = @picker.satval
-		console.log('a')
 		assign = (e) =>
-			console.log('b')
 			offset = p.cvs.offset()
 			[xPos,yPos] = [e.pageX - offset.left, e.pageY - offset.top]
 			start = (yPos*p.width + xPos)*4

@@ -216,10 +216,8 @@ Picker = (function() {
   Picker.prototype.pickColor = function(e) {
     var assign, p;
     p = this.picker.satval;
-    console.log('a');
     assign = __bind(function(e) {
       var b, g, offset, r, start, xPos, yPos, _ref, _ref2;
-      console.log('b');
       offset = p.cvs.offset();
       _ref = [e.pageX - offset.left, e.pageY - offset.top], xPos = _ref[0], yPos = _ref[1];
       start = (yPos * p.width + xPos) * 4;
