@@ -1,51 +1,61 @@
-class Selector
-	constructor: (@actions = {create: (-> null), done: (-> null)}) ->
-		@selected = null
-		@ignores = ['html', 'body', '.bounder', '.picker']
-		$('body').append '''
-						 <div id="bounder-t" class="bounder"></div>
-						 <div id="bounder-b" class="bounder"></div>
-						 <div id="bounder-l" class="bounder"></div>
-						 <div id="bounder-r" class="bounder"></div>
-						 '''
+class OutlineBounds
+	constructor: (prefix='') ->
+		positions = ['top','bottom','left','right']
+		elems = for pos in positions
+			"<div id=\"#{prefix}-bound-#{pos}\" class=\"#{prefix}-bound #{prefix}\"></div>"
+		html = elems.join("\n")
 		css =
 			border: '2px dotted red'
-			position: 'absolute'
+			position: 'absolute',
 			height: '0'
 			width: '0'
-			'z-index': '999999'
-		$('.bounder').css(css)
-		@hideBounds()
+			'z-index': '999998'
+		$('body').append(html)
+		this[pos] = $("##{prefix}-bound-#{pos}") for pos in positions
+		this.all = $(".#{prefix}-bound")
+		this.all.css(css)
+		@hide()
+	remove: -> @all.remove()
+	bound: (element) ->
+		position = element.offset()
+		[h,w] = [element.outerHeight(), element.outerWidth()]
+		[t,b,l,r] = [position.top-2, position.top+h-2,position.left-2,position.left+w-2]
+		@top   .css({top: t, left: l, width: w})
+		@bottom.css({top: b, left: l, width: w})
+		@left  .css({top: t, left: l, height: h})
+		@right .css({top: t, left: r, height: h})
+		@show()
+	show: -> @all.show()
+	hide: -> @all.hide()
+
+class Selector
+	constructor: (@widgetClass,prefix='_sin') ->
+		@selected = null
+		@ignores = ['html', 'body', ".#{prefix}", ".#{prefix} *"]
+		@bounds = new OutlineBounds(prefix)
 		$(document).bind 'keydown', 'ctrl+m', (e) =>
+			@detachWidget()
 			$(document).mousemove(@select)
 			$(document).click =>
-				@stopListening()
-				@actions.create(@selected)
+				if @selected?
+					@stopListening()
+					@attachWidget()
 		$(document).bind 'keydown', 'esc', (e) =>
 			@stopListening()
-			@hideBounds()
-			@actions.done()
+			@bounds.hide()
+			@detachWidget()
+	attachWidget: -> @widget = new @widgetClass(@selected)
+	detachWidget: -> @widget.remove() if @widget
 	stopListening: (e) =>
 		$(document).unbind('mousemove')
 		$(document).unbind('click')
 	select: (e) =>
 		@selected = $(e.target)
 		if @selected? and _.all(@ignores,(s) => not @selected.is(s))
-			@bound(@selected)
+			@bounds.bound(@selected)
 		else
-			@hideBounds()
-	bound: (element) ->
-		position = element.offset()
-		[h,w] = [element.outerHeight(), element.outerWidth()]
-		[t,b,l,r] = [position.top-2, position.top+h-2,position.left-2,position.left+w-2]
-		$('#bounder-t').css({top: t, left: l, width: w})
-		$('#bounder-b').css({top: b, left: l, width: w})
-		$('#bounder-l').css({top: t, left: l, height: h})
-		$('#bounder-r').css({top: t, left: r, height: h})
-		$('.bounder').show()
-		element
-	hideBounds: ->
-		$('.bounder').hide()
+			@selected = null
+			@bounds.hide()
 
 ColorUtil =
 	hsv: (hue,sat,val) ->
@@ -65,12 +75,12 @@ ColorUtil =
 	hsvs: (hue,sat,val) ->
 		this.rgbs(this.hsv(hue,sat,val))
 
-class Picker
+class ColorPicker
 	constructor: (@target) ->
 		$('body').append """
-						 <div id="colorpicker" class="picker">
-						     <canvas id="picker-sv"  class="picker" width="150" height="150" />
-						     <canvas id="picker-hue" class="picker" width="20" height="150" />
+						 <div id="colorpicker" class="_sin">
+						     <canvas id="picker-sv"  width="150" height="150" />
+						     <canvas id="picker-hue" width="20" height="150" />
 						 </div>
 		                 """
 		outerCSS =
@@ -82,6 +92,7 @@ class Picker
 			position: 'fixed'
 			right: '5px'
 			bottom: '5px'
+			'z-index': '999999'
 		innerCSS =
 			'margin-left': '5px'
 			background: 'white'
@@ -147,11 +158,6 @@ class Picker
 		p.cvs.mouseup -> p.cvs.unbind('mousemove')
 
 $(->
-	actions =
-		picker: null
-		create: (elem) ->
-			this.picker = new Picker(elem)
-		done: -> this.picker.remove()
-	s = new Selector(actions)
+	s = new Selector(ColorPicker)
 )
 

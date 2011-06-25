@@ -1,43 +1,111 @@
-var ColorUtil, Picker, Selector;
+var ColorPicker, ColorUtil, OutlineBounds, Selector;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
-Selector = (function() {
-  function Selector(actions) {
-    var css;
-    this.actions = actions != null ? actions : {
-      create: (function() {
-        return null;
-      }),
-      done: (function() {
-        return null;
-      })
-    };
-    this.select = __bind(this.select, this);;
-    this.stopListening = __bind(this.stopListening, this);;
-    this.selected = null;
-    this.ignores = ['html', 'body', '.bounder', '.picker'];
-    $('body').append('<div id="bounder-t" class="bounder"></div>\n<div id="bounder-b" class="bounder"></div>\n<div id="bounder-l" class="bounder"></div>\n<div id="bounder-r" class="bounder"></div>');
+OutlineBounds = (function() {
+  function OutlineBounds(prefix) {
+    var css, elems, html, pos, positions, _i, _len;
+    if (prefix == null) {
+      prefix = '';
+    }
+    positions = ['top', 'bottom', 'left', 'right'];
+    elems = (function() {
+      var _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = positions.length; _i < _len; _i++) {
+        pos = positions[_i];
+        _results.push("<div id=\"" + prefix + "-bound-" + pos + "\" class=\"" + prefix + "-bound " + prefix + "\"></div>");
+      }
+      return _results;
+    })();
+    html = elems.join("\n");
     css = {
       border: '2px dotted red',
       position: 'absolute',
       height: '0',
       width: '0',
-      'z-index': '999999'
+      'z-index': '999998'
     };
-    $('.bounder').css(css);
-    this.hideBounds();
+    $('body').append(html);
+    for (_i = 0, _len = positions.length; _i < _len; _i++) {
+      pos = positions[_i];
+      this[pos] = $("#" + prefix + "-bound-" + pos);
+    }
+    this.all = $("." + prefix + "-bound");
+    this.all.css(css);
+    this.hide();
+  }
+  OutlineBounds.prototype.remove = function() {
+    return this.all.remove();
+  };
+  OutlineBounds.prototype.bound = function(element) {
+    var b, h, l, position, r, t, w, _ref, _ref2;
+    position = element.offset();
+    _ref = [element.outerHeight(), element.outerWidth()], h = _ref[0], w = _ref[1];
+    _ref2 = [position.top - 2, position.top + h - 2, position.left - 2, position.left + w - 2], t = _ref2[0], b = _ref2[1], l = _ref2[2], r = _ref2[3];
+    this.top.css({
+      top: t,
+      left: l,
+      width: w
+    });
+    this.bottom.css({
+      top: b,
+      left: l,
+      width: w
+    });
+    this.left.css({
+      top: t,
+      left: l,
+      height: h
+    });
+    this.right.css({
+      top: t,
+      left: r,
+      height: h
+    });
+    return this.show();
+  };
+  OutlineBounds.prototype.show = function() {
+    return this.all.show();
+  };
+  OutlineBounds.prototype.hide = function() {
+    return this.all.hide();
+  };
+  return OutlineBounds;
+})();
+Selector = (function() {
+  function Selector(widgetClass, prefix) {
+    this.widgetClass = widgetClass;
+    if (prefix == null) {
+      prefix = '_sin';
+    }
+    this.select = __bind(this.select, this);;
+    this.stopListening = __bind(this.stopListening, this);;
+    this.selected = null;
+    this.ignores = ['html', 'body', "." + prefix, "." + prefix + " *"];
+    this.bounds = new OutlineBounds(prefix);
     $(document).bind('keydown', 'ctrl+m', __bind(function(e) {
+      this.detachWidget();
       $(document).mousemove(this.select);
       return $(document).click(__bind(function() {
-        this.stopListening();
-        return this.actions.create(this.selected);
+        if (this.selected != null) {
+          this.stopListening();
+          return this.attachWidget();
+        }
       }, this));
     }, this));
     $(document).bind('keydown', 'esc', __bind(function(e) {
       this.stopListening();
-      this.hideBounds();
-      return this.actions.done();
+      this.bounds.hide();
+      return this.detachWidget();
     }, this));
   }
+  Selector.prototype.attachWidget = function() {
+    return this.widget = new this.widgetClass(this.selected);
+  };
+  Selector.prototype.detachWidget = function() {
+    if (this.widget) {
+      return this.widget.remove();
+    }
+  };
   Selector.prototype.stopListening = function(e) {
     $(document).unbind('mousemove');
     return $(document).unbind('click');
@@ -47,41 +115,11 @@ Selector = (function() {
     if ((this.selected != null) && _.all(this.ignores, __bind(function(s) {
       return !this.selected.is(s);
     }, this))) {
-      return this.bound(this.selected);
+      return this.bounds.bound(this.selected);
     } else {
-      return this.hideBounds();
+      this.selected = null;
+      return this.bounds.hide();
     }
-  };
-  Selector.prototype.bound = function(element) {
-    var b, h, l, position, r, t, w, _ref, _ref2;
-    position = element.offset();
-    _ref = [element.outerHeight(), element.outerWidth()], h = _ref[0], w = _ref[1];
-    _ref2 = [position.top - 2, position.top + h - 2, position.left - 2, position.left + w - 2], t = _ref2[0], b = _ref2[1], l = _ref2[2], r = _ref2[3];
-    $('#bounder-t').css({
-      top: t,
-      left: l,
-      width: w
-    });
-    $('#bounder-b').css({
-      top: b,
-      left: l,
-      width: w
-    });
-    $('#bounder-l').css({
-      top: t,
-      left: l,
-      height: h
-    });
-    $('#bounder-r').css({
-      top: t,
-      left: r,
-      height: h
-    });
-    $('.bounder').show();
-    return element;
-  };
-  Selector.prototype.hideBounds = function() {
-    return $('.bounder').hide();
   };
   return Selector;
 })();
@@ -115,13 +153,13 @@ ColorUtil = {
     return this.rgbs(this.hsv(hue, sat, val));
   }
 };
-Picker = (function() {
-  function Picker(target) {
+ColorPicker = (function() {
+  function ColorPicker(target) {
     var hue, innerCSS, outerCSS, sv, _ref;
     this.target = target;
     this.pickColor = __bind(this.pickColor, this);;
     this.pickHue = __bind(this.pickHue, this);;
-    $('body').append("<div id=\"colorpicker\" class=\"picker\">\n    <canvas id=\"picker-sv\"  class=\"picker\" width=\"150\" height=\"150\" />\n    <canvas id=\"picker-hue\" class=\"picker\" width=\"20\" height=\"150\" />\n</div>");
+    $('body').append("<div id=\"colorpicker\" class=\"_sin\">\n    <canvas id=\"picker-sv\"  width=\"150\" height=\"150\" />\n    <canvas id=\"picker-hue\" width=\"20\" height=\"150\" />\n</div>");
     outerCSS = {
       width: '180px',
       height: '150px',
@@ -130,7 +168,8 @@ Picker = (function() {
       overflow: 'auto',
       position: 'fixed',
       right: '5px',
-      bottom: '5px'
+      bottom: '5px',
+      'z-index': '999999'
     };
     innerCSS = {
       'margin-left': '5px',
@@ -160,10 +199,10 @@ Picker = (function() {
     this.picker.hue.cvs.mousedown(this.pickHue);
     this.picker.satval.cvs.mousedown(this.pickColor);
   }
-  Picker.prototype.remove = function() {
+  ColorPicker.prototype.remove = function() {
     return $('#colorpicker').remove();
   };
-  Picker.prototype.drawGradient = function(picker, x1, y1, x2, y2, stops) {
+  ColorPicker.prototype.drawGradient = function(picker, x1, y1, x2, y2, stops) {
     var g, i, oldFill, _ref;
     oldFill = picker.ctx.fillStyle;
     g = picker.ctx.createLinearGradient(x1, y1, x2, y2);
@@ -174,7 +213,7 @@ Picker = (function() {
     picker.ctx.fillRect(0, 0, picker.width, picker.height);
     return picker.ctx.fillStyle = oldFill;
   };
-  Picker.prototype.drawHuePicker = function() {
+  ColorPicker.prototype.drawHuePicker = function() {
     var p, s, stops;
     p = this.picker.hue;
     stops = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255], [255, 0, 0]];
@@ -188,7 +227,7 @@ Picker = (function() {
       return _results;
     })());
   };
-  Picker.prototype.drawSatValPicker = function(hue) {
+  ColorPicker.prototype.drawSatValPicker = function(hue) {
     var id, p;
     p = this.picker.satval;
     this.drawGradient(p, 0, 0, 0, p.height, [ColorUtil.hsvs(hue, 100, 100), 'white']);
@@ -196,7 +235,7 @@ Picker = (function() {
     this.picker.satval.id = id = p.ctx.getImageData(0, 0, p.width, p.height);
     return this.picker.satval.pixels = id.data;
   };
-  Picker.prototype.pickHue = function(e) {
+  ColorPicker.prototype.pickHue = function(e) {
     var adjust, p;
     p = this.picker.hue;
     adjust = __bind(function(e) {
@@ -213,7 +252,7 @@ Picker = (function() {
       return p.cvs.unbind('mousemove');
     });
   };
-  Picker.prototype.pickColor = function(e) {
+  ColorPicker.prototype.pickColor = function(e) {
     var assign, p;
     p = this.picker.satval;
     assign = __bind(function(e) {
@@ -230,18 +269,9 @@ Picker = (function() {
       return p.cvs.unbind('mousemove');
     });
   };
-  return Picker;
+  return ColorPicker;
 })();
 $(function() {
-  var actions, s;
-  actions = {
-    picker: null,
-    create: function(elem) {
-      return this.picker = new Picker(elem);
-    },
-    done: function() {
-      return this.picker.remove();
-    }
-  };
-  return s = new Selector(actions);
+  var s;
+  return s = new Selector(ColorPicker);
 });
