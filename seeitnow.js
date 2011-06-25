@@ -111,10 +111,19 @@ Selector = (function() {
     return $(document).unbind('click');
   };
   Selector.prototype.select = function(e) {
+    var selectable, selector, _i, _len, _ref;
     this.selected = $(e.target);
-    if ((this.selected != null) && _.all(this.ignores, __bind(function(s) {
-      return !this.selected.is(s);
-    }, this))) {
+    selectable = true;
+    if (this.selected != null) {
+      _ref = this.ignores;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        selector = _ref[_i];
+        if (this.selected.is(selector)) {
+          selectable = false;
+        }
+      }
+    }
+    if ((this.selected != null) && selectable) {
       return this.bounds.bound(this.selected);
     } else {
       this.selected = null;
