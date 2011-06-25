@@ -121,10 +121,11 @@ class ColorPicker
 				</div>
 				"""
 		$('body').append(html)
+		keyMap = {a: "#"+prefix+"-colorpicker", b: "##{prefix}-colorpicker canvas"}
 		css =
-			prefix+"-colorpicker":
-				width: "#{@width+@hueWidth+20}px"
-				height: "#{@height+20}px"
+			a:
+				width: "#{@width+@hueWidth+10}px"
+				height: "#{@height}px"
 				padding: '10px 10px 10px 5px'
 				background: '#ddd'
 				overflow: 'auto'
@@ -132,12 +133,12 @@ class ColorPicker
 				right: '5px'
 				bottom: '5px'
 				'z-index':'999999'
-			prefix+"-colorpicker canvas":
+			b:
 				'margin-left': '5px'
 				backgroudn: 'white'
 				display: 'block'
 				float: 'left'				
-		$("##{selector}").css(rules) for selector,rules of css
+		$(keyMap[key]).css(rules) for key,rules of css
 		@hue = new GradientCanvas("##{prefix}-hue",@pickHue)
 		@sv = new GradientCanvas("##{prefix}-sv",@pickColor)
 		@hue.drawHueGradient()

@@ -235,7 +235,7 @@ GradientCanvas = (function() {
 })();
 ColorPicker = (function() {
   function ColorPicker(selected, width, height, hueWidth) {
-    var css, html, rules, selector;
+    var css, html, key, keyMap, rules;
     this.selected = selected;
     this.width = width != null ? width : 150;
     this.height = height != null ? height : 150;
@@ -244,10 +244,14 @@ ColorPicker = (function() {
     this.pickHue = __bind(this.pickHue, this);;
     html = "<div id=\"" + prefix + "-colorpicker\" class=\"" + prefix + "\">\n	<canvas id=\"" + prefix + "-sv\" width=\"" + this.width + "\" height=\"" + this.height + "\" />\n	<canvas id=\"" + prefix + "-hue\" width=\"" + this.hueWidth + "\" height=\"" + this.height + "\" />\n</div>";
     $('body').append(html);
-    css = prefix + {
-      "-colorpicker": {
-        width: "" + (this.width + this.hueWidth + 20) + "px",
-        height: "" + (this.height + 20) + "px",
+    keyMap = {
+      a: "#" + prefix + "-colorpicker",
+      b: "#" + prefix + "-colorpicker canvas"
+    };
+    css = {
+      a: {
+        width: "" + (this.width + this.hueWidth + 10) + "px",
+        height: "" + this.height + "px",
         padding: '10px 10px 10px 5px',
         background: '#ddd',
         overflow: 'auto',
@@ -255,19 +259,17 @@ ColorPicker = (function() {
         right: '5px',
         bottom: '5px',
         'z-index': '999999'
-      }
-    };
-    prefix + {
-      "-colorpicker canvas": {
+      },
+      b: {
         'margin-left': '5px',
         backgroudn: 'white',
         display: 'block',
         float: 'left'
       }
     };
-    for (selector in css) {
-      rules = css[selector];
-      $("#" + selector).css(rules);
+    for (key in css) {
+      rules = css[key];
+      $(keyMap[key]).css(rules);
     }
     this.hue = new GradientCanvas("#" + prefix + "-hue", this.pickHue);
     this.sv = new GradientCanvas("#" + prefix + "-sv", this.pickColor);
