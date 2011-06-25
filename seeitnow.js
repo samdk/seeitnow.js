@@ -111,19 +111,20 @@ Selector = (function() {
     return $(document).unbind('click');
   };
   Selector.prototype.select = function(e) {
-    var selectable, selector, _i, _len, _ref;
+    var s;
     this.selected = $(e.target);
-    selectable = true;
-    if (this.selected != null) {
+    if ((this.selected != null) && ((function() {
+      var _i, _len, _ref, _results;
       _ref = this.ignores;
+      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        selector = _ref[_i];
-        if (this.selected.is(selector)) {
-          selectable = false;
+        s = _ref[_i];
+        if (this.selected.is(s)) {
+          _results.push(true);
         }
       }
-    }
-    if ((this.selected != null) && selectable) {
+      return _results;
+    }).call(this)).length === 0) {
       return this.bounds.bound(this.selected);
     } else {
       this.selected = null;

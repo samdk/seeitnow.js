@@ -51,11 +51,7 @@ class Selector
 		$(document).unbind('click')
 	select: (e) =>
 		@selected = $(e.target)
-		selectable = true
-		if @selected?
-			for selector in @ignores
-				selectable = false if @selected.is(selector)
-		if @selected? and selectable
+		if @selected? and (true for s in @ignores when @selected.is(s)).length == 0
 			@bounds.bound(@selected)
 		else
 			@selected = null
