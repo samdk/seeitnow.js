@@ -120,7 +120,7 @@ Selector = (function() {
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         s = _ref[_i];
         if (this.selected.is(s)) {
-          _results.push(true);
+          _results.push(1);
         }
       }
       return _results;

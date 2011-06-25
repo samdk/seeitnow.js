@@ -51,7 +51,7 @@ class Selector
 		$(document).unbind('click')
 	select: (e) =>
 		@selected = $(e.target)
-		if @selected? and (true for s in @ignores when @selected.is(s)).length == 0
+		if @selected? and (1 for s in @ignores when @selected.is(s)).length == 0
 			@bounds.bound(@selected)
 		else
 			@selected = null
