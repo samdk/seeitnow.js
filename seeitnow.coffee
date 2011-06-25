@@ -1,5 +1,7 @@
+prefix = '_sin'
+
 class OutlineBounds
-	constructor: (prefix='') ->
+	constructor: ->
 		positions = ['top','bottom','left','right']
 		elems = for pos in positions
 			"<div id=\"#{prefix}-bound-#{pos}\" class=\"#{prefix}-bound #{prefix}\"></div>"
@@ -29,7 +31,7 @@ class OutlineBounds
 	hide: -> @all.hide()
 
 class Selector
-	constructor: (@widgetClass,prefix='_sin') ->
+	constructor: (@widgetClass) ->
 		@selected = null
 		@ignores = ['html', 'body', ".#{prefix}", ".#{prefix} *"]
 		@bounds = new OutlineBounds(prefix)
@@ -58,7 +60,8 @@ class Selector
 			@bounds.hide()
 
 ColorUtil =
-	hsv: (hue,sat,val) ->
+	hsv: (args...) ->
+		if args.length == 3 then [hue,sat,val] = args else [hue,sat,val] = args[0]
 		# put saturation/value on a [0,1] scale
 		[sat,vat] = [sat / 100, val / 100]
 		# the HSV color scale is broken down into 6 segments for translating to RGB
@@ -75,89 +78,85 @@ ColorUtil =
 	hsvs: (hue,sat,val) ->
 		this.rgbs(this.hsv(hue,sat,val))
 
-class ColorPicker
-	constructor: (@target) ->
-		$('body').append """
-						 <div id="colorpicker" class="_sin">
-						     <canvas id="picker-sv"  width="150" height="150" />
-						     <canvas id="picker-hue" width="20" height="150" />
-						 </div>
-		                 """
-		outerCSS =
-			width: '180px'
-			height: '150px'
-			padding: '10px 10px 10px 5px'
-			background: '#ddd'
-			overflow: 'auto'
-			position: 'fixed'
-			right: '5px'
-			bottom: '5px'
-			'z-index': '999999'
-		innerCSS =
-			'margin-left': '5px'
-			background: 'white'
-			display: 'block'
-			float: 'left'
-		$('#colorpicker').css(outerCSS)
-		$('#colorpicker canvas').css(innerCSS)
-		[sv,hue] = [$('#picker-sv'),$('#picker-hue')]
-		@picker =
-			satval:
-				cvs: sv
-				ctx: sv[0].getContext('2d')
-				width: 150
-				height: 150
-			hue:
-				cvs: hue
-				ctx: hue[0].getContext('2d')
-				width: 20
-				height: 150
-		@drawHuePicker()
-		@drawSatValPicker(0)
-		@picker.hue.cvs.mousedown(@pickHue)
-		@picker.satval.cvs.mousedown(@pickColor)
-	# for when we're done
-	remove: -> $('#colorpicker').remove()
-	# utility function for quickly drawing a gradient that fills a canvas
-	drawGradient: (picker,x1,y1,x2,y2,stops) ->
-		oldFill = picker.ctx.fillStyle
-		g = picker.ctx.createLinearGradient(x1,y1,x2,y2)
+class GradientCanvas
+	constructor: (@selector,@callback) ->
+		@cvs = $(@selector)
+		@ctx = @cvs[0].getContext('2d')
+		[@width,@height] = [@cvs.width(),@cvs.height()]
+		@cvs.mousedown(@mousedown)
+		[@x,@y] = [@width-1,@height-1]
+	drawGradient: (x1,y1,x2,y2,stops) ->
+		g = @ctx.createLinearGradient(x1,y1,x2,y2)
 		g.addColorStop(i/(stops.length-1),stops[i]) for i in [0...stops.length]
-		picker.ctx.fillStyle = g
-		picker.ctx.fillRect(0,0,picker.width,picker.height)
-		picker.ctx.fillStyle = oldFill
-	drawHuePicker: ->
-		p = @picker.hue
+		@ctx.fillStyle = g
+		@ctx.fillRect(0,0,@width,@height)
+	getPixel: (x,y) ->
+		i = (y*@width + x)*4
+		# alpha will always be 100%, so we can ignore it
+		[r,g,b] = [@imageData[i],@imageData[i+1],@imageData[i+2]]
+		return [r,g,b]
+	drawHueGradient: ->
 		stops = [[255,0,0],[255,255,0],[0,255,0],[0,255,255],[0,0,255],[255,0,255],[255,0,0]]
-		@drawGradient(p,0,p.height,0,0,ColorUtil.rgbs(s) for s in stops)
-	drawSatValPicker: (hue) ->
-		p = @picker.satval
-		@drawGradient(p,0,0,0,p.height,[ColorUtil.hsvs(hue,100,100),'white'])
-		@drawGradient(p,0,0,p.width,9,['black','transparent'])
-		@picker.satval.id = id = p.ctx.getImageData(0,0,p.width,p.height)
-		@picker.satval.pixels = id.data
-	pickHue: (e) =>
-		p = @picker.hue
-		adjust = (e) =>
-			yPos = e.pageY - p.cvs.offset().top
-			hue = (p.height - yPos) * 360 / p.height
-			@drawSatValPicker(hue) if 0 <= hue <= 360
-		adjust(e)
-		p.cvs.mousemove(adjust)
-		p.cvs.mouseup -> p.cvs.unbind('mousemove')
-	pickColor: (e) =>
-		p = @picker.satval
-		assign = (e) =>
-			offset = p.cvs.offset()
-			[xPos,yPos] = [e.pageX - offset.left, e.pageY - offset.top]
-			start = (yPos*p.width + xPos)*4
-			[r,g,b] = [p.pixels[start],p.pixels[start+1],p.pixels[start+2]]
-			@target.css('background',ColorUtil.rgbs(r,g,b))
-		assign(e)
-		p.cvs.mousemove(assign)
-		p.cvs.mouseup -> p.cvs.unbind('mousemove')
+		@drawGradient(0,@height,0,0,ColorUtil.rgbs(s) for s in stops)
+	drawSatValGradient: (hue) ->
+		@drawGradient(0,0,0,@height,[ColorUtil.hsvs(hue,100,100),'white'])
+		@drawGradient(0,0,@width,9,['black','transparent'])
+		@imageData = @ctx.getImageData(0,0,@width,@height).data
+	mousedown: (e) =>
+		@getPosition(e)
+		@cvs.mousemove(@getPosition)
+		@cvs.mouseup => @cvs.unbind('mousemove')
+	getPosition: (e) =>
+		offset = @cvs.offset()
+		[@x,@y] = [e.pageX - offset.left, e.pageY - offset.top]
+		start = (@x*@width + @x)*4
+		@callback(@x,@y)
+
+class ColorPicker
+	constructor: (@selected,@width=150,@height=150,@hueWidth=20) ->
+		html =	"""
+				<div id="#{prefix}-colorpicker" class="#{prefix}">
+					<canvas id="#{prefix}-sv" width="#{@width}" height="#{@height}" />
+					<canvas id="#{prefix}-hue" width="#{@hueWidth}" height="#{@height}" />
+				</div>
+				"""
+		$('body').append(html)
+		css =
+			prefix+"-colorpicker":
+				width: "#{@width+@hueWidth+20}px"
+				height: "#{@height+20}px"
+				padding: '10px 10px 10px 5px'
+				background: '#ddd'
+				overflow: 'auto'
+				position: 'fixed'
+				right: '5px'
+				bottom: '5px'
+				'z-index':'999999'
+			prefix+"-colorpicker canvas":
+				'margin-left': '5px'
+				backgroudn: 'white'
+				display: 'block'
+				float: 'left'				
+		$("##{selector}").css(rules) for selector,rules of css
+		@hue = new GradientCanvas("##{prefix}-hue",@pickHue)
+		@sv = new GradientCanvas("##{prefix}-sv",@pickColor)
+		@hue.drawHueGradient()
+		@sv.drawSatValGradient(0)
+	remove: -> $("##{prefix}-colorpicker").remove()
+	pickHue: (x,y) =>
+		hue = (@height - y) * 360 / @height
+		@sv.drawSatValGradient(hue) if 0 <= hue <= 360
+		@pickColor(@sv.x,@sv.y)
+	pickColor: (x,y) =>
+		[r,g,b] = @sv.getPixel(x,y)
+		@colorChange(r,g,b)
+	colorChange: (r,g,b) -> console.log(ColorUtil.rgbs(r,g,b))
+
+class BackgroundColorPicker extends ColorPicker
+	colorChange: (r,g,b) ->
+		@selected.css('background',ColorUtil.rgbs(r,g,b))
 
 $(->
-	s = new Selector(ColorPicker)
+	s = new Selector(BackgroundColorPicker)
 )
 
