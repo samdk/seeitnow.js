@@ -84,7 +84,7 @@ class GradientCanvas
 		@ctx = @cvs[0].getContext('2d')
 		[@width,@height] = [@cvs.width(),@cvs.height()]
 		@cvs.mousedown(@mousedown)
-		[@x,@y] = [@width-1,@height-1]
+		[@x,@y] = [@width-1,0]
 	drawGradient: (x1,y1,x2,y2,stops) ->
 		g = @ctx.createLinearGradient(x1,y1,x2,y2)
 		g.addColorStop(i/(stops.length-1),stops[i]) for i in [0...stops.length]

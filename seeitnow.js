@@ -182,7 +182,7 @@ GradientCanvas = (function() {
     this.ctx = this.cvs[0].getContext('2d');
     _ref = [this.cvs.width(), this.cvs.height()], this.width = _ref[0], this.height = _ref[1];
     this.cvs.mousedown(this.mousedown);
-    _ref2 = [this.width - 1, this.height - 1], this.x = _ref2[0], this.y = _ref2[1];
+    _ref2 = [this.width - 1, 0], this.x = _ref2[0], this.y = _ref2[1];
   }
   GradientCanvas.prototype.drawGradient = function(x1, y1, x2, y2, stops) {
     var g, i, _ref;
