@@ -77,6 +77,9 @@ ColorUtil =
 		"rgb(#{r},#{g},#{b})"
 	hsvs: (hue,sat,val) ->
 		this.rgbs(this.hsv(hue,sat,val))
+	hexs: (args...) ->
+		if args.length == 3 then [r,g,b] = args else [r,g,b] = args[0]
+		"##{r.toString(16)}#{g.toString(16)}#{b.toString(16)}"
 
 class GradientCanvas
 	constructor: (@selector,@callback) ->
@@ -118,6 +121,7 @@ class ColorPicker
 				<div id="#{prefix}-colorpicker" class="#{prefix}">
 					<canvas id="#{prefix}-sv" width="#{@width}" height="#{@height}" />
 					<canvas id="#{prefix}-hue" width="#{@hueWidth}" height="#{@height}" />
+					<a href='#' id="save">save</a>
 				</div>
 				"""
 		$('body').append(html)
@@ -125,8 +129,8 @@ class ColorPicker
 		css =
 			a:
 				width: "#{@width+@hueWidth+10}px"
-				height: "#{@height}px"
-				padding: '10px 10px 10px 5px'
+				height: "#{@height+20}px"
+				padding: '10px 5px 10px 10px'
 				background: '#ddd'
 				overflow: 'auto'
 				position: 'fixed'
@@ -134,8 +138,8 @@ class ColorPicker
 				bottom: '5px'
 				'z-index':'999999'
 			b:
-				'margin-left': '5px'
-				backgroudn: 'white'
+				'margin-right': '5px'
+				background: 'white'
 				display: 'block'
 				float: 'left'				
 		$(keyMap[key]).css(rules) for key,rules of css
@@ -143,6 +147,10 @@ class ColorPicker
 		@sv = new GradientCanvas("##{prefix}-sv",@pickColor)
 		@hue.drawHueGradient()
 		@sv.drawSatValGradient(0)
+		@rgb = null
+		$('#save').click (e) =>
+			e.preventDefault()
+			changeLineOfValue(@selected,'background',ColorUtil.hexs(@rgb)) if @rgb?
 	remove: -> $("##{prefix}-colorpicker").remove()
 	pickHue: (x,y) =>
 		hue = (@height - y) * 360 / @height
@@ -150,6 +158,7 @@ class ColorPicker
 		@pickColor(@sv.x,@sv.y)
 	pickColor: (x,y) =>
 		[r,g,b] = @sv.getPixel(x,y)
+		@rgb = [r,g,b]
 		@colorChange(r,g,b)
 	colorChange: (r,g,b) -> console.log(ColorUtil.rgbs(r,g,b))
 
@@ -157,7 +166,9 @@ class BackgroundColorPicker extends ColorPicker
 	colorChange: (r,g,b) ->
 		@selected.css('background',ColorUtil.rgbs(r,g,b))
 
+socket = null
 $(->
+	socket = io.connect('http://localhost:8002')
 	s = new Selector(BackgroundColorPicker)
 )
 

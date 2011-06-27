@@ -3,15 +3,29 @@ body {
 	color: black;
 }
 	#outer {
-		height: 210px;
+		height: 220px;
 	}
 	div div {
 		width: 200px;
 		height: 200px;
 		margin: 10px;
+
 		float: left;
 	}
+	#outer
+	{
+		width: 700px; height: 230px;
+	}
 	#a { background: purple; }
+	#outer { background: white; }
 	#b { background: blue; }
 	#c { background: green; }
+	div div {
+		color: white;
+	}
+	#outer
+	
+	{
+		color: white;
+	}
 

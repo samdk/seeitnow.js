@@ -1,4 +1,4 @@
-var BackgroundColorPicker, ColorPicker, ColorUtil, GradientCanvas, OutlineBounds, Selector, prefix;
+var BackgroundColorPicker, ColorPicker, ColorUtil, GradientCanvas, OutlineBounds, Selector, prefix, socket;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
   for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
   function ctor() { this.constructor = child; }
@@ -79,8 +79,8 @@ OutlineBounds = (function() {
 Selector = (function() {
   function Selector(widgetClass) {
     this.widgetClass = widgetClass;
-    this.select = __bind(this.select, this);;
-    this.stopListening = __bind(this.stopListening, this);;
+    this.select = __bind(this.select, this);
+    this.stopListening = __bind(this.stopListening, this);
     this.selected = null;
     this.ignores = ['html', 'body', "." + prefix, "." + prefix + " *"];
     this.bounds = new OutlineBounds(prefix);
@@ -169,6 +169,16 @@ ColorUtil = {
   },
   hsvs: function(hue, sat, val) {
     return this.rgbs(this.hsv(hue, sat, val));
+  },
+  hexs: function() {
+    var args, b, g, r, _ref;
+    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    if (args.length === 3) {
+      r = args[0], g = args[1], b = args[2];
+    } else {
+      _ref = args[0], r = _ref[0], g = _ref[1], b = _ref[2];
+    }
+    return "#" + (r.toString(16)) + (g.toString(16)) + (b.toString(16));
   }
 };
 GradientCanvas = (function() {
@@ -176,8 +186,8 @@ GradientCanvas = (function() {
     var _ref, _ref2;
     this.selector = selector;
     this.callback = callback;
-    this.getPosition = __bind(this.getPosition, this);;
-    this.mousedown = __bind(this.mousedown, this);;
+    this.getPosition = __bind(this.getPosition, this);
+    this.mousedown = __bind(this.mousedown, this);
     this.cvs = $(this.selector);
     this.ctx = this.cvs[0].getContext('2d');
     _ref = [this.cvs.width(), this.cvs.height()], this.width = _ref[0], this.height = _ref[1];
@@ -187,7 +197,7 @@ GradientCanvas = (function() {
   GradientCanvas.prototype.drawGradient = function(x1, y1, x2, y2, stops) {
     var g, i, _ref;
     g = this.ctx.createLinearGradient(x1, y1, x2, y2);
-    for (i = 0, _ref = stops.length; (0 <= _ref ? i < _ref : i > _ref); (0 <= _ref ? i += 1 : i -= 1)) {
+    for (i = 0, _ref = stops.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
       g.addColorStop(i / (stops.length - 1), stops[i]);
     }
     this.ctx.fillStyle = g;
@@ -240,9 +250,9 @@ ColorPicker = (function() {
     this.width = width != null ? width : 150;
     this.height = height != null ? height : 150;
     this.hueWidth = hueWidth != null ? hueWidth : 20;
-    this.pickColor = __bind(this.pickColor, this);;
-    this.pickHue = __bind(this.pickHue, this);;
-    html = "<div id=\"" + prefix + "-colorpicker\" class=\"" + prefix + "\">\n	<canvas id=\"" + prefix + "-sv\" width=\"" + this.width + "\" height=\"" + this.height + "\" />\n	<canvas id=\"" + prefix + "-hue\" width=\"" + this.hueWidth + "\" height=\"" + this.height + "\" />\n</div>";
+    this.pickColor = __bind(this.pickColor, this);
+    this.pickHue = __bind(this.pickHue, this);
+    html = "<div id=\"" + prefix + "-colorpicker\" class=\"" + prefix + "\">\n	<canvas id=\"" + prefix + "-sv\" width=\"" + this.width + "\" height=\"" + this.height + "\" />\n	<canvas id=\"" + prefix + "-hue\" width=\"" + this.hueWidth + "\" height=\"" + this.height + "\" />\n	<a href='#' id=\"save\">save</a>\n</div>";
     $('body').append(html);
     keyMap = {
       a: "#" + prefix + "-colorpicker",
@@ -251,8 +261,8 @@ ColorPicker = (function() {
     css = {
       a: {
         width: "" + (this.width + this.hueWidth + 10) + "px",
-        height: "" + this.height + "px",
-        padding: '10px 10px 10px 5px',
+        height: "" + (this.height + 20) + "px",
+        padding: '10px 5px 10px 10px',
         background: '#ddd',
         overflow: 'auto',
         position: 'fixed',
@@ -261,8 +271,8 @@ ColorPicker = (function() {
         'z-index': '999999'
       },
       b: {
-        'margin-left': '5px',
-        backgroudn: 'white',
+        'margin-right': '5px',
+        background: 'white',
         display: 'block',
         float: 'left'
       }
@@ -275,6 +285,13 @@ ColorPicker = (function() {
     this.sv = new GradientCanvas("#" + prefix + "-sv", this.pickColor);
     this.hue.drawHueGradient();
     this.sv.drawSatValGradient(0);
+    this.rgb = null;
+    $('#save').click(__bind(function(e) {
+      e.preventDefault();
+      if (this.rgb != null) {
+        return changeLineOfValue(this.selected, 'background', ColorUtil.hexs(this.rgb));
+      }
+    }, this));
   }
   ColorPicker.prototype.remove = function() {
     return $("#" + prefix + "-colorpicker").remove();
@@ -290,6 +307,7 @@ ColorPicker = (function() {
   ColorPicker.prototype.pickColor = function(x, y) {
     var b, g, r, _ref;
     _ref = this.sv.getPixel(x, y), r = _ref[0], g = _ref[1], b = _ref[2];
+    this.rgb = [r, g, b];
     return this.colorChange(r, g, b);
   };
   ColorPicker.prototype.colorChange = function(r, g, b) {
@@ -298,16 +316,18 @@ ColorPicker = (function() {
   return ColorPicker;
 })();
 BackgroundColorPicker = (function() {
+  __extends(BackgroundColorPicker, ColorPicker);
   function BackgroundColorPicker() {
     BackgroundColorPicker.__super__.constructor.apply(this, arguments);
   }
-  __extends(BackgroundColorPicker, ColorPicker);
   BackgroundColorPicker.prototype.colorChange = function(r, g, b) {
     return this.selected.css('background', ColorUtil.rgbs(r, g, b));
   };
   return BackgroundColorPicker;
 })();
+socket = null;
 $(function() {
   var s;
+  socket = io.connect('http://localhost:8002');
   return s = new Selector(BackgroundColorPicker);
 });
