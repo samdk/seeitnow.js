@@ -10,10 +10,12 @@ exports.replaceValue = (property,value,lineNo,filename) ->
 	exports.readLines filename, (lines) ->
 		line = lines[lineNo]
 		start = line.indexOf(property)
-		[before,relevant] = [line.substring(0,start),line.substring(start)]
-		start = relevant.indexOf(':')+1
-		end = relevant.indexOf(';')
-		[before,after] = [before+relevant.substring(0,start),relevant.substring(end)]
-		lines[lineNo] = "#{before} #{value}#{after}"
-		fs.writeFile(filename,lines.join('\n'))
+		if start >= 0
+			[before,relevant] = [line.substring(0,start),line.substring(start)]
+			start = relevant.indexOf(':')+1
+			end = relevant.indexOf(';')
+			[before,after] = [before+relevant.substring(0,start),relevant.substring(end)]
+			lines[lineNo] = "#{before} #{value}#{after}"
+			fs.writeFile(filename,lines.join('\n'))
+		else console.log 'property is not on specified line'
 

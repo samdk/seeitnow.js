@@ -13,11 +13,15 @@ exports.replaceValue = function(property, value, lineNo, filename) {
     var after, before, end, line, relevant, start, _ref, _ref2;
     line = lines[lineNo];
     start = line.indexOf(property);
-    _ref = [line.substring(0, start), line.substring(start)], before = _ref[0], relevant = _ref[1];
-    start = relevant.indexOf(':') + 1;
-    end = relevant.indexOf(';');
-    _ref2 = [before + relevant.substring(0, start), relevant.substring(end)], before = _ref2[0], after = _ref2[1];
-    lines[lineNo] = "" + before + " " + value + after;
-    return fs.writeFile(filename, lines.join('\n'));
+    if (start >= 0) {
+      _ref = [line.substring(0, start), line.substring(start)], before = _ref[0], relevant = _ref[1];
+      start = relevant.indexOf(':') + 1;
+      end = relevant.indexOf(';');
+      _ref2 = [before + relevant.substring(0, start), relevant.substring(end)], before = _ref2[0], after = _ref2[1];
+      lines[lineNo] = "" + before + " " + value + after;
+      return fs.writeFile(filename, lines.join('\n'));
+    } else {
+      return console.log('property is not on specified line');
+    }
   });
 };
