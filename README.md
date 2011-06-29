@@ -1,4 +1,4 @@
-SeeItNow-js makes your web browser a better design tool.
+SeeItNow.js lets you adjust CSS property values on the fly and see the changes in real time, with the goal of making web browsers into better design tools. Different types of property values have associated widgets (like a live-updating color picker for adjusting color and background-color properties). If you're running the optional NodeJS server, SeeItNow.js can also save your changes directly to the underlying stylesheet.
 
 * Adjust CSS values in your browser using property specific tools (currently, the only available tool is a live-updating color picker for changing background color)
 * If you're running the NodeJS client...
