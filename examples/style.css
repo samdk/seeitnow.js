@@ -5,7 +5,7 @@ body {
 	#outer {
 		height: 220px;
 	}
-	div div {
+	#outer div {
 		width: 200px;
 		height: 200px;
 		margin: 10px;
