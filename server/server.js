@@ -1,15 +1,14 @@
-var express, http, io, server, socketIO, writer;
-express = require('express');
-writer = require('./writer');
+var BASE_PATH, cssmod, everyone, http, nowjs, server;
 http = require('http');
-socketIO = require('socket.io');
-server = express.createServer();
-io = socketIO.listen(server);
-server.listen(8002);
-io.sockets.on('connection', function(socket) {
-  console.log("a connection: " + socket);
-  return socket.on('replaceValue', function(data) {
-    console.log("replacing..." + data);
-    return writer.replaceValue(data.property, data.value, data.lineNo, data.filename);
-  });
-});
+nowjs = require('now');
+cssmod = require('./cssmod');
+server = http.createServer();
+everyone = nowjs.initialize(server);
+server.listen(8395);
+console.log('now.js server started on port 8395');
+BASE_PATH = "" + __dirname + "/../examples/";
+everyone.now.changeCSS = function(filename, line, prop, newVal) {
+  var css;
+  css = new cssmod.CSSFile(filename, BASE_PATH);
+  return css.change(line, prop, newVal);
+};
