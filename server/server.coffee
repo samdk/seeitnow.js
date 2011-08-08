@@ -11,7 +11,6 @@ console.log('now.js server started on port 8395')
 
 BASE_PATH = "#{__dirname}/../examples/"
 
-everyone.now.changeCSS = (filename,line,prop,newVal) ->
+everyone.now.changeCSS = (filename,selector,property,newVal) ->
     css = new cssmod.CSSFile filename, BASE_PATH
-    css.change(line,prop,newVal)
-    #everyone.now.changed(filename,line,prop,newVal)
+    css.change(selector,property,newVal)

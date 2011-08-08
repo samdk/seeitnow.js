@@ -20,10 +20,10 @@ body {
     #outer { background: white; }
     #b { background: blue; }
     #c { background: green; }
-    div div {
+    .box {
         color: white;
     }
-    #outer, #a {
+    #outer {
         color: white;
     }
 

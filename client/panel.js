@@ -2,7 +2,8 @@ var Panel, p;
 var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 Panel = (function() {
   function Panel() {
-    var css, propertySelect, selector, _ref;
+    this.changeValue = __bind(this.changeValue, this);
+    this.saveChanges = __bind(this.saveChanges, this);    var css, propertySelect, saveButton, selector, _ref;
     this.body = $('body');
     this.body.append(this.panelHTML());
     this.height = 31;
@@ -12,19 +13,110 @@ Panel = (function() {
       $(selector).css(css);
     }
     this.panel = $('#-sin-panel-wrapper');
+    this.selectorBox = $('#-sin-selector-input');
+    this.selectorBox.keypress(__bind(function(evt) {
+      var selected;
+      if (evt.keyCode === 13) {
+        evt.preventDefault();
+        selector = this.selectorBox.val();
+        selected = $(selector);
+        if (selected.length > 0) {
+          this.selector.bounds.hide();
+          return this.select(selected, selector);
+        }
+      }
+    }, this));
     this.valueBox = $('#-sin-value-input');
-    this.toolbar = $('#-sin-widget-toolbar');
-    this.widgetBox = $('#-sin-widget-box');
+    this.valueBox.keypress(__bind(function(evt) {
+      if (evt.keyCode === 13) {
+        evt.preventDefault();
+        return this.changeValue(this.valueBox.val());
+      }
+    }, this));
+    saveButton = $('#-sin-save-button');
+    saveButton.click(this.saveChanges);
     this.widgetCount = 0;
     this.widget = null;
     this.selected = null;
+    this.cssSelector = null;
+    this.selector = new Selector(this);
     propertySelect = $('#-sin-property-selector');
     this.property = propertySelect.val();
     propertySelect.change(__bind(function(e) {
-      return this.property = propertySelect.val();
+      this.property = propertySelect.val();
+      return this.setWidget();
     }, this));
+    $('#-sin-select-button').click(__bind(function() {
+      if (!this.selector.started) {
+        return this.selector.start();
+      } else if (this.selector.started && (this.selected != null)) {
+        return this.selector.start();
+      } else if (this.selector.started && !(this.selected != null)) {
+        return this.selector.stop();
+      }
+    }, this));
+    this.changes = {};
     this.show();
+    this.setWidget();
   }
+  Panel.prototype.saveChanges = function() {
+    var changes, property, selector, val, _ref;
+    _ref = this.changes;
+    for (selector in _ref) {
+      changes = _ref[selector];
+      for (property in changes) {
+        val = changes[property];
+        now.changeCSS('style.css', selector, property, val);
+      }
+    }
+    return this.changes = {};
+  };
+  Panel.prototype.select = function(elem, selector) {
+    if (selector == null) {
+      selector = null;
+    }
+    this.selected = elem;
+    this.cssSelector = selector || ("#" + (this.selected.attr('id')));
+    this.selectorBox.val(this.cssSelector);
+    this.valueBox.val(this.selected.css(this.property));
+    return this.showWidget();
+  };
+  Panel.prototype.deselect = function() {
+    this.selected = null;
+    this.cssSelector = null;
+    this.selectorBox.val('');
+    this.valueBox.val('');
+    return this.hideWidget();
+  };
+  Panel.prototype.setWidget = function() {
+    var widgetMapping;
+    widgetMapping = {
+      'background': ColorPicker,
+      'background-color': ColorPicker,
+      'color': ColorPicker
+    };
+    this.widgetClass = widgetMapping[this.property];
+    if (this.selected != null) {
+      this.hideWidget();
+      return this.showWidget();
+    }
+  };
+  Panel.prototype.showWidget = function() {
+    return this.widget = new this.widgetClass(this.changeValue);
+  };
+  Panel.prototype.hideWidget = function() {
+    if (this.widget != null) {
+      return this.widget.remove();
+    }
+  };
+  Panel.prototype.changeValue = function(val) {
+    this.valueBox.val(val);
+    this.selected.css(this.property, val);
+    if (!(this.cssSelector in this.changes)) {
+      this.changes[this.cssSelector] = {};
+    }
+    return this.changes[this.cssSelector][this.property] = val;
+  };
   Panel.prototype.show = function() {
     var bodyCSS;
     bodyCSS = {
@@ -43,44 +135,8 @@ Panel = (function() {
       'margin-bottom': 0
     });
   };
-  Panel.prototype.addWidget = function(widget) {
-    var button, css, id, index, selector, _ref;
-    index = this.widgetCount++;
-    id = "-sin-widget-button-" + index;
-    this.toolbar.append(this.widgetButton(widget, id));
-    button = $(id);
-    _ref = this.widgetButtonCSS();
-    for (selector in _ref) {
-      css = _ref[selector];
-      $(selector).css(css);
-    }
-    return button.click(__bind(function(e) {
-      e.preventDefault();
-      if (button.hasClass('-sin-selected')) {
-        button.removeClass('-sin-selected');
-        widget.unregisterAll();
-        this.widgetBox.hide();
-        return this.widget = null;
-      } else {
-        this.toolbar.children('a').removeClass('-sin-selected');
-        button.addClass('-sin-selected');
-        widget.register(__bind(function(val) {
-          if (this.selected) {
-            return this.selected.css(this.property, val);
-          }
-        }, this));
-        widget.registerInput(this.valueBox);
-        widgetisplayIn(this.widgetBox);
-        this.widgetBox.show();
-        return this.widget = widget;
-      }
-    }, this));
-  };
-  Panel.prototype.widgetButton = function(widget, id) {
-    return "<a href='#' id=\"" + id + "\">\n	<img src=\"" + ("../client/images/placeholder.png" || widget.iconURL) + "\" />\n</a>";
-  };
   Panel.prototype.panelHTML = function() {
-    return "<div id=\"-sin-panel-wrapper\" class=\"-sin\">\n	<div id=\"-sin-panel\">\n		<a href='#' id=\"-sin-select-button\"></a>\n		<form>\n			<input type=\"checkbox\" id=\"-sin-enable-borders\" checked />\n			<div id=\"-sin-enable-borders-display\"></div>\n			<input type=\"text\" id=\"-sin-select-input\" />\n			<select id=\"-sin-property-selector\">\n				<option>color</option>\n				<option>background-color</option>\n			</select>\n			<input type=\"text\" id=\"-sin-value-input\" />\n		</form>\n		<div id=\"-sin-widget-toolbar\">\n		</div>\n		<div id=\"-sin-widget-box\">\n		</div>\n	</div>\n</div>";
+    return "<div id=\"-sin-panel-wrapper\" class=\"-sin\">\n    <div id=\"-sin-panel\">\n        <a href='#' id=\"-sin-select-button\"></a>\n        <form>\n            <input type=\"checkbox\" id=\"-sin-enable-borders\" checked />\n            <div id=\"-sin-enable-borders-display\"></div>\n            <input type=\"text\" id=\"-sin-selector-input\" />\n            <select id=\"-sin-property-selector\">\n                <option>background</option>\n                <option>color</option>\n                <option>background-color</option>\n            </select>\n            <input type=\"text\" id=\"-sin-value-input\" />\n        </form>\n        <a href='#' id=\"-sin-save-button\">save</a>\n    </div>\n</div>";
   };
   Panel.prototype.panelCSS = function() {
     var css;
@@ -141,6 +197,12 @@ Panel = (function() {
       },
       '#-sin-widget-toolbar': {
         right: 0
+      },
+      '#-sin-save-button': {
+        display: 'block',
+        position: 'absolute',
+        right: '10px',
+        top: '6px'
       }
     };
   };

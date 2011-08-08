@@ -37,7 +37,7 @@ Widget = (function() {
   };
   Widget.prototype.html = function() {
     return 'subclasses should override this\
-	     method to display their own HTML';
+         method to display their own HTML';
   };
   Widget.prototype.css = function() {
     return {};

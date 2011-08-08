@@ -6,19 +6,84 @@ class Panel
         $(selector).css(css) for selector,css of @panelCSS()
 
         @panel = $('#-sin-panel-wrapper')
+        @selectorBox = $('#-sin-selector-input')
+        @selectorBox.keypress (evt) =>
+            # when the enter key is pressed...
+            if evt.keyCode is 13
+                evt.preventDefault()
+                selector = @selectorBox.val()
+                selected = $(selector)
+                if selected.length > 0
+                    @selector.bounds.hide()
+                    @select selected,selector
         @valueBox = $('#-sin-value-input')
-        @toolbar = $('#-sin-widget-toolbar')
-        @widgetBox = $('#-sin-widget-box')
+        @valueBox.keypress (evt) =>
+            if evt.keyCode is 13 # enter
+                evt.preventDefault()
+                @changeValue @valueBox.val()
+        saveButton = $('#-sin-save-button')
+        saveButton.click @saveChanges
 
         @widgetCount = 0
         @widget = null
         @selected = null
+        @cssSelector = null
+
+        @selector = new Selector this
 
         propertySelect = $('#-sin-property-selector')
         @property = propertySelect.val()
-        propertySelect.change (e) => @property = propertySelect.val()
-        
+        propertySelect.change (e) =>
+            @property = propertySelect.val()
+            @setWidget()
+
+        $('#-sin-select-button').click =>
+            if not @selector.started
+                @selector.start()
+            else if @selector.started and @selected?
+                @selector.start()
+            else if @selector.started and not @selected?
+                @selector.stop()
+
+        @changes = {}
+
         @show()
+        @setWidget()
+    saveChanges: =>
+        for selector,changes of @changes
+            for property,val of changes
+                now.changeCSS('style.css',selector,property,val)
+        @changes = {}
+    select: (elem,selector=null) ->
+        @selected = elem
+        @cssSelector = selector or "##{@selected.attr('id')}"
+        @selectorBox.val(@cssSelector)
+        @valueBox.val(@selected.css(@property))
+        @showWidget()
+    deselect: ->
+        @selected = null
+        @cssSelector = null
+        @selectorBox.val('')
+        @valueBox.val('')
+        @hideWidget()
+    setWidget: ->
+        widgetMapping =
+            'background':ColorPicker
+            'background-color':ColorPicker
+            'color':ColorPicker
+            #'font-family':FontPicker
+        @widgetClass = widgetMapping[@property]
+        if @selected?
+            @hideWidget()
+            @showWidget()
+    showWidget: -> @widget = new @widgetClass @changeValue
+    hideWidget: -> @widget.remove() if @widget?
+    changeValue: (val) =>
+        @valueBox.val(val)
+        @selected.css(@property,val)
+        if @cssSelector not of @changes
+            @changes[@cssSelector] = {}
+        @changes[@cssSelector][@property] = val
     # todo: make this work if the body already has a bottom border
     show: ->
         # we're setting a bottom border in addition to bottom margin because
@@ -33,34 +98,6 @@ class Panel
     hide: ->
         @panel.hide()
         @body.css {'border-bottom-width': 0, 'margin-bottom': 0}
-    addWidget: (widget) ->
-        index = @widgetCount++
-        id = "-sin-widget-button-#{index}"
-        @toolbar.append @widgetButton(widget,id)
-        button = $(id)
-        $(selector).css(css) for selector,css of @widgetButtonCSS()
-        button.click (e) =>
-            e.preventDefault()
-            if button.hasClass '-sin-selected'
-                button.removeClass '-sin-selected'
-                widget.unregisterAll()
-                @widgetBox.hide()
-                @widget = null
-            else
-                @toolbar.children('a').removeClass '-sin-selected'
-                button.addClass '-sin-selected' 
-                widget.register (val) =>
-                    @selected.css(@property,val) if @selected
-                widget.registerInput @valueBox
-                widgetisplayIn @widgetBox
-                @widgetBox.show()
-                @widget = widget
-    widgetButton: (widget,id) ->
-        """
-        <a href='#' id="#{id}">
-            <img src="#{"../client/images/placeholder.png" or widget.iconURL}" />
-        </a>
-        """
     panelHTML: ->
         """
         <div id="-sin-panel-wrapper" class="-sin">
@@ -69,17 +106,15 @@ class Panel
                 <form>
                     <input type="checkbox" id="-sin-enable-borders" checked />
                     <div id="-sin-enable-borders-display"></div>
-                    <input type="text" id="-sin-select-input" />
+                    <input type="text" id="-sin-selector-input" />
                     <select id="-sin-property-selector">
+                        <option>background</option>
                         <option>color</option>
                         <option>background-color</option>
                     </select>
                     <input type="text" id="-sin-value-input" />
                 </form>
-                <div id="-sin-widget-toolbar">
-                </div>
-                <div id="-sin-widget-box">
-                </div>
+                <a href='#' id="-sin-save-button">save</a>
             </div>
         </div>
         """
@@ -132,6 +167,11 @@ class Panel
                 border: '1px solid #ccc'
             '#-sin-widget-toolbar':
                 right: 0
+            '#-sin-save-button':
+                display: 'block'
+                position: 'absolute'
+                right: '10px'
+                top: '6px'
     widgetButtonCSS: ->
         css =
             '#-sin-widget-toolbar a':
